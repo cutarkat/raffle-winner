@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import Confetti from 'react-confetti-boom';
 
 const App = () => {
-  const [employees, setEmployees] = useState([]);
+  const [participants, setParticipants] = useState([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isDrawing, setIsDrawing] = useState(false);
   const [showWinner, setShowWinner] = useState(false);
@@ -15,8 +15,8 @@ const App = () => {
   const PORT = import.meta.env.VITE_REACT_APP_API_PORT;
   const APP_URL = import.meta.env.VITE_REACT_APP_URL || 'http://localhost';
 
-  const EMPLOYEE_API_URL = `${APP_URL}:${PORT}/api/employees`;
-  const EMPLOYEE_IMAGES_API_URL = `${APP_URL}:${PORT}/employees`;
+  const EMPLOYEE_API_URL = `${APP_URL}:${PORT}/api/participants`;
+  const EMPLOYEE_IMAGES_API_URL = `${APP_URL}:${PORT}/participants`;
 
   const PLACEHOLDER_API_URL = `${APP_URL}:${PORT}/api/random-placeholder`;
   const PLACEHOLDER_IMAGES_API_URL = `${APP_URL}:${PORT}/placeholders`;
@@ -49,14 +49,14 @@ const App = () => {
     }
   }, [showWinner]);
 
-  // Fetch employees data from Express backend
+  // Fetch participants data from Express backend
   useEffect(() => {
-    const fetchEmployees = async () => {
+    const fetchParticipants = async () => {
       try {
         const response = await fetch(EMPLOYEE_API_URL);
-        if (!response.ok) throw new Error('Failed to fetch employees');
+        if (!response.ok) throw new Error('Failed to fetch participants');
         const data = await response.json();
-        setEmployees(data);
+        setParticipants(data);
         setIsLoading(false);
       } catch (err) {
         setError(err.message);
@@ -64,15 +64,15 @@ const App = () => {
       }
     };
 
-    fetchEmployees();
+    fetchParticipants();
   }, []);
 
   const getRandomEmployee = useCallback(() => {
-    return employees[Math.floor(Math.random() * employees.length)];
-  }, [employees]);
+    return participants[Math.floor(Math.random() * participants.length)];
+  }, [participants]);
 
   const drawWinner = useCallback(() => {
-    if (isDrawing || employees.length === 0) return;
+    if (isDrawing || participants.length === 0) return;
 
     setIsDrawing(true);
     setShowWinner(false);
@@ -82,7 +82,7 @@ const App = () => {
     const slowdownFactor = 1.1;
 
     const animate = () => {
-      setCurrentIndex(prev => (prev + 1) % employees.length);
+      setCurrentIndex(prev => (prev + 1) % participants.length);
       duration += speed;
 
       if (duration < maxDuration) {
@@ -91,28 +91,28 @@ const App = () => {
       } else {
         const selectedWinner = getRandomEmployee();
         setWinner(selectedWinner);
-        setCurrentIndex(employees.indexOf(selectedWinner));
+        setCurrentIndex(participants.indexOf(selectedWinner));
         setShowWinner(true);
         setIsDrawing(false);
       }
     };
 
     animate();
-  }, [isDrawing, getRandomEmployee, employees]);
+  }, [isDrawing, getRandomEmployee, participants]);
 
-  useEffect(() => {
-    const handleKeydown = (e) => {
-      if (e.code === 'Space' && !isDrawing) {
-        e.preventDefault();
-        drawWinner();
-      } else if (e.code === 'F11' || e.code === 'KeyF') {
-        e.preventDefault();
-      }
-    };
+  // useEffect(() => { // Remove this useEffect temporarily
+  //   const handleKeydown = (e) => {
+  //     if (e.code === 'Space' && !isDrawing) {
+  //       e.preventDefault();
+  //       drawWinner();
+  //     } else if (e.code === 'F11' || e.code === 'KeyF') {
+  //       e.preventDefault();
+  //     }
+  //   };
 
-    document.addEventListener('keydown', handleKeydown);
-    return () => document.removeEventListener('keydown', handleKeydown);
-  }, [drawWinner, isDrawing]);
+  //   document.addEventListener('keydown', handleKeydown);
+  //   return () => document.removeEventListener('keydown', handleKeydown);
+  // }, [drawWinner, isDrawing]);
 
   if (isLoading) {
     return (
@@ -172,7 +172,7 @@ const App = () => {
         </h1>
 
         <div className="relative flex-1 flex flex-col items-center justify-center">
-          {employees.length === 0 ? (
+          {participants.length === 0 ? (
             <div className="text-2xl text-yellow-400">
               No employee photos found. Please add photos to the "participants" directory.
             </div>
@@ -188,7 +188,7 @@ const App = () => {
                 />
               ) : (
                 <>
-                  {employees.map((employee, index) => (
+                  {participants.map((employee, index) => (
                     <img
                       key={employee.id}
                       src={`${EMPLOYEE_IMAGES_API_URL}${employee.image}`}
@@ -213,12 +213,12 @@ const App = () => {
         <div className="fixed bottom-8 left-0 right-0 flex justify-center">
           <button
             onClick={drawWinner}
-            disabled={isDrawing || employees.length === 0}
+            disabled={isDrawing || participants.length === 0}
             className={`px-10 py-5 text-1xl font-bold tracking-wider uppercase rounded-xl
-                      transform transition-all duration-300 shadow-lg
-                      ${isDrawing || employees.length === 0
-                ? 'bg-gray-500 cursor-not-allowed'
-                : 'bg-yellow-500 hover:bg-orange-600 hover:-translate-y-1 hover:shadow-xl'
+                      transform transition-all duration-300 shadow-lg text-orange-900
+                      ${isDrawing || participants.length === 0
+                ? 'bg-gray-500 cursor-not-allowed text-gray-400'
+                : 'bg-yellow-500 hover:bg-orange-600 hover:text-orange-100 hover:-translate-y-1 hover:shadow-xl'
               }`}
           >
             Draw!

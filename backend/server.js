@@ -7,14 +7,14 @@ const app = express();
 app.use(cors());
 
 // Configure this to your images folder path
-const EMPLOYEES_FOLDER = './images/participants';
+const PARTICIPANTS_FOLDER = './images/participants';
 const PLACEHOLDERS_FOLDER = './images/placeholders';
 
-// Endpoint to get all employees with their photos
-app.get('/api/employees', async (req, res) => {
+// Endpoint to get all participants with their photos
+app.get('/api/participants', async (req, res) => {
     try {
         // Read all files from the images folder
-        const files = await fs.readdir(EMPLOYEES_FOLDER);
+        const files = await fs.readdir(PARTICIPANTS_FOLDER);
         
         // Filter for image files only
         const imageFiles = files.filter(file => 
@@ -22,13 +22,13 @@ app.get('/api/employees', async (req, res) => {
         );
 
         // Create employee data from image files
-        const employees = imageFiles.map(file => ({
+        const participants = imageFiles.map(file => ({
             id: path.parse(file).name, // Use filename without extension as ID
             name: path.parse(file).name.replace(/-/g, ' '), // Convert filename to name
             image: `/${file}`
         }));
 
-        res.json(employees);
+        res.json(participants);
     } catch (error) {
         console.error('Error reading employee photos:', error);
         res.status(500).json({ error: 'Failed to load employee data' });
@@ -51,7 +51,7 @@ app.get('/api/random-placeholder', async (req, res) => {
 });
 
 // Serve static images
-app.use('/employees', express.static(EMPLOYEES_FOLDER));
+app.use('/participants', express.static(PARTICIPANTS_FOLDER));
 app.use('/placeholders', express.static(PLACEHOLDERS_FOLDER));
 
 const PORT = process.env.PORT || 3001;

@@ -18,8 +18,6 @@ Designed for celebrations like parties, events, or gatherings, this application 
 - **Styling**: TailwindCSS
 - **Animations**: react-confetti-boom
 
----
-
 ## Installation and Setup
 
 ### Prerequisites
@@ -79,16 +77,12 @@ Designed for celebrations like parties, events, or gatherings, this application 
 
    The frontend will be running at the URL provided in the terminal (e.g., `http://localhost:5173`).
 
----
-
 ## Usage
 
 1. Place participant photos in the designated folder `backend/images/participants`.
 2. Open the frontend URL (e.g., `http://localhost:5173`) in your browser.
 3. Click the "Draw!" button to randomly select a winner.
 4. Enjoy the confetti celebration on the screen!
-
----
 
 ## Customization
 
