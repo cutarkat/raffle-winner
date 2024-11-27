@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import Confetti from 'react-confetti';
+import Confetti from 'react-confetti-boom';
 
 const App = () => {
   const [employees, setEmployees] = useState([]);
@@ -7,16 +7,41 @@ const App = () => {
   const [isDrawing, setIsDrawing] = useState(false);
   const [showWinner, setShowWinner] = useState(false);
   const [showWinnerName, setShowWinnerName] = useState(false);
+  const [placeholderImage, setPlaceholderImage] = useState(null);
   const [winner, setWinner] = useState(null);
-  const [isFullscreen, setIsFullscreen] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
+
+  const PORT = import.meta.env.VITE_REACT_APP_API_PORT;
+  const APP_URL = import.meta.env.VITE_REACT_APP_URL || 'http://localhost';
+
+  const EMPLOYEE_API_URL = `${APP_URL}:${PORT}/api/employees`;
+  const EMPLOYEE_IMAGES_API_URL = `${APP_URL}:${PORT}/employees`;
+
+  const PLACEHOLDER_API_URL = `${APP_URL}:${PORT}/api/random-placeholder`;
+  const PLACEHOLDER_IMAGES_API_URL = `${APP_URL}:${PORT}/placeholders`;
+
+  // Add a new useEffect to fetch the random placeholder when component mounts
+  useEffect(() => {
+    const fetchRandomPlaceholder = async () => {
+      try {
+        const response = await fetch(PLACEHOLDER_API_URL);
+        if (!response.ok) throw new Error('Failed to fetch placeholder');
+        const data = await response.json();
+        setPlaceholderImage(data.image);
+      } catch (err) {
+        console.error('Error fetching placeholder:', err);
+      }
+    };
+
+    fetchRandomPlaceholder();
+  }, []);
 
   useEffect(() => {
     if (showWinner) {
       const timer = setTimeout(() => {
         setShowWinnerName(true);
-      }, 1000); // 1 second delay
+      }, 3000); // 3 second delay
 
       return () => clearTimeout(timer); // Cleanup the timer on component unmount or when showWinner changes
     } else {
@@ -28,7 +53,7 @@ const App = () => {
   useEffect(() => {
     const fetchEmployees = async () => {
       try {
-        const response = await fetch('http://localhost:3001/api/employees');
+        const response = await fetch(EMPLOYEE_API_URL);
         if (!response.ok) throw new Error('Failed to fetch employees');
         const data = await response.json();
         setEmployees(data);
@@ -42,27 +67,6 @@ const App = () => {
     fetchEmployees();
   }, []);
 
-  const toggleFullscreen = () => {
-    if (!document.fullscreenElement) {
-      document.documentElement.requestFullscreen().catch(err => {
-        console.log(`Error attempting to enable fullscreen: ${err.message}`);
-      });
-    } else {
-      if (document.exitFullscreen) {
-        document.exitFullscreen();
-      }
-    }
-  };
-
-  useEffect(() => {
-    const handleFullscreenChange = () => {
-      setIsFullscreen(!!document.fullscreenElement);
-    };
-
-    document.addEventListener('fullscreenchange', handleFullscreenChange);
-    return () => document.removeEventListener('fullscreenchange', handleFullscreenChange);
-  }, []);
-
   const getRandomEmployee = useCallback(() => {
     return employees[Math.floor(Math.random() * employees.length)];
   }, [employees]);
@@ -74,7 +78,7 @@ const App = () => {
     setShowWinner(false);
     let speed = 50;
     let duration = 0;
-    const maxDuration = 5000;
+    const maxDuration = 7000;
     const slowdownFactor = 1.1;
 
     const animate = () => {
@@ -103,7 +107,6 @@ const App = () => {
         drawWinner();
       } else if (e.code === 'F11' || e.code === 'KeyF') {
         e.preventDefault();
-        toggleFullscreen();
       }
     };
 
@@ -130,8 +133,36 @@ const App = () => {
   return (
     <div
       className="min-h-screen bg-gray-900 text-white"
-      style={{ backgroundImage: 'url(/background.jpg)', backgroundSize: 'cover', backgroundPosition: 'center' }}
+      style={{ backgroundImage: 'url(/images/background.jpg)', backgroundSize: 'cover', backgroundPosition: 'center' }}
     >
+      {showWinner && (
+        <>
+          <Confetti
+            colors={['#ff5353', '#ffee53', '#53ffa9', '#5395ff', '#ef53ff']}
+            mode="boom"
+            x={1}
+            y={1}
+            particleCount={400}
+            shapeSize={30}
+            deg={180}
+            effectCount="Infinity"
+            effectInterval={2000}
+            spreadDeg={100}
+            launchSpeed={3} />
+          <Confetti
+            colors={['#ff5353', '#ffee53', '#53ffa9', '#5395ff', '#ef53ff']}
+            mode="boom"
+            x={0}
+            y={1}
+            particleCount={400}
+            shapeSize={30}
+            deg={0}
+            effectCount="Infinity"
+            effectInterval={2000}
+            spreadDeg={100}
+            launchSpeed={3} />
+        </>
+      )}
       <div className="container mx-auto px-4 py-8 flex flex-col min-h-screen">
         <h5 className="uppercase first-line:font-bold text-orange-500 text-center mb-3">
           Sprobe Year-End 2024 - Raffle Draw
@@ -143,27 +174,37 @@ const App = () => {
         <div className="relative flex-1 flex flex-col items-center justify-center">
           {employees.length === 0 ? (
             <div className="text-2xl text-yellow-400">
-              No employee photos found. Please add photos to the "employee-photos" directory.
+              No employee photos found. Please add photos to the "participants" directory.
             </div>
           ) : (
             <div
               className="relative w-[80vh] max-w-[90vw] aspect-square border-8 border-yellow-500 rounded-2xl overflow-hidden shadow-[0_0_30px_rgba(59,130,246,0.3)]"
             >
-              {employees.map((employee, index) => (
+              {!isDrawing && currentIndex === 0 ? (
                 <img
-                  key={employee.id}
-                  src={`http://localhost:3001/images${employee.image}`}
-                  alt={employee.name}
-                  className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-200
-                    ${index === currentIndex ? 'opacity-100' : 'opacity-0'}`}
+                  src={`${PLACEHOLDER_IMAGES_API_URL}/${placeholderImage}`}
+                  alt="Click Draw to Start"
+                  className="absolute inset-0 w-full h-full object-cover"
                 />
-              ))}
-              {showWinner && showWinnerName && <Confetti /> && (
-                <div className="absolute w-full bottom-20 left-1/2 transform -translate-x-1/2 
-                              uppercase text-2xl font-bold text-orange-100 drop-shadow-lg bg-black/60 p-4 z-10
-                              opacity-100 transition-opacity duration-500 text-center outline-text">
-                  <span className=" align-text-bottom">🎉</span> {winner?.name} <span className=" align-text-bottom">🎉</span>
-                </div>
+              ) : (
+                <>
+                  {employees.map((employee, index) => (
+                    <img
+                      key={employee.id}
+                      src={`${EMPLOYEE_IMAGES_API_URL}${employee.image}`}
+                      alt={employee.name}
+                      className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-200
+                        ${index === currentIndex && (isDrawing || showWinner) ? 'opacity-100' : 'opacity-0'}`}
+                    />
+                  ))}
+                  {showWinner && (
+                    <div className={`absolute w-full bottom-20 left-1/2 transform -translate-x-1/2 
+                                uppercase text-2xl font-bold text-orange-100 drop-shadow-lg bg-black/60 p-4 z-10
+                                transition-opacity duration-1000 ${showWinnerName ? 'opacity-100' : 'opacity-0'} text-center outline-text`}>
+                      <span className="w-100 align-text-bottom">🎉</span> {winner?.name} <span className="w-100 align-text-bottom">🎉</span>
+                    </div>
+                  )}
+                </>
               )}
             </div>
           )}
@@ -173,7 +214,7 @@ const App = () => {
           <button
             onClick={drawWinner}
             disabled={isDrawing || employees.length === 0}
-            className={`px-10 py-6 text-2xl font-bold tracking-wider uppercase rounded-xl
+            className={`px-10 py-5 text-1xl font-bold tracking-wider uppercase rounded-xl
                       transform transition-all duration-300 shadow-lg
                       ${isDrawing || employees.length === 0
                 ? 'bg-gray-500 cursor-not-allowed'
@@ -183,15 +224,6 @@ const App = () => {
             Draw!
           </button>
         </div>
-
-        {/* <button
-          onClick={toggleFullscreen}
-          className="fixed top-4 right-4 px-6 py-3 text-lg bg-blue-500/30 
-                    border-2 border-blue-500 rounded-lg hover:bg-blue-500/50
-                    transition-colors duration-300"
-        >
-          {isFullscreen ? 'Exit Fullscreen' : 'Enter Fullscreen'}
-        </button> */}
       </div>
     </div>
   );

@@ -1,3 +1,7 @@
+frontend/.env
 frontend/node_modules
+
+backend/.env
 backend/node_modules
-backend/employee-photos
+backend/images/participants
+backend/images/participants/*

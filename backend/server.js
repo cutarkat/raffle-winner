@@ -7,13 +7,14 @@ const app = express();
 app.use(cors());
 
 // Configure this to your images folder path
-const IMAGES_FOLDER = './employee-photos';
+const EMPLOYEES_FOLDER = './images/participants';
+const PLACEHOLDERS_FOLDER = './images/placeholders';
 
 // Endpoint to get all employees with their photos
 app.get('/api/employees', async (req, res) => {
     try {
         // Read all files from the images folder
-        const files = await fs.readdir(IMAGES_FOLDER);
+        const files = await fs.readdir(EMPLOYEES_FOLDER);
         
         // Filter for image files only
         const imageFiles = files.filter(file => 
@@ -34,10 +35,27 @@ app.get('/api/employees', async (req, res) => {
     }
 });
 
+// Endpoint to get a random employee photo
+app.get('/api/random-placeholder', async (req, res) => {
+    try {
+        const files = await fs.readdir(PLACEHOLDERS_FOLDER);
+        if (files.length === 0) {
+            return res.status(404).json({ error: 'No placeholder images found' });
+        }
+        const randomFile = files[Math.floor(Math.random() * files.length)];
+        res.json({ image: randomFile });
+    } catch (error) {
+        console.error('Error reading placeholder photos:', error);
+        res.status(500).json({ error: 'Failed to load placeholder image' });
+    }
+});
+
 // Serve static images
-app.use('/images', express.static(IMAGES_FOLDER));
+app.use('/employees', express.static(EMPLOYEES_FOLDER));
+app.use('/placeholders', express.static(PLACEHOLDERS_FOLDER));
 
 const PORT = process.env.PORT || 3001;
+const APP_URL = process.env.APP_URL || 'http://localhost';
 app.listen(PORT, () => {
-    console.log(`Server running on port ${PORT}`);
+    console.log(`Server running on ${APP_URL} with port ${PORT}. To access the API server, use ${APP_URL}:${PORT}`);
 });
