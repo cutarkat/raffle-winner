@@ -1,4 +1,6 @@
 /** @type {import('tailwindcss').Config} */
+import twGlow from "twglow";
+
 export default {
   content: [
     "./index.html",
@@ -7,6 +9,6 @@ export default {
   theme: {
     extend: {},
   },
-  plugins: [],
+  plugins: [twGlow],
 }
 

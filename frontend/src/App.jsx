@@ -1,6 +1,72 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import Confetti from 'react-confetti-boom';
 
+const API_URLS = {
+  participants: `${import.meta.env.VITE_REACT_APP_URL || 'http://localhost'}:${import.meta.env.VITE_REACT_APP_API_PORT}/api/participants`,
+  images: `${import.meta.env.VITE_REACT_APP_URL || 'http://localhost'}:${import.meta.env.VITE_REACT_APP_API_PORT}/participants`,
+  placeholder: `${import.meta.env.VITE_REACT_APP_URL || 'http://localhost'}:${import.meta.env.VITE_REACT_APP_API_PORT}/api/random-placeholder`,
+  placeholderImage: `${import.meta.env.VITE_REACT_APP_URL || 'http://localhost'}:${import.meta.env.VITE_REACT_APP_API_PORT}/placeholders`,
+};
+
+// Placeholder Component
+const Placeholder = ({ image }) => (
+  <img
+    src={image}
+    alt="Click Draw to Start"
+    className="absolute inset-0 w-full h-full object-cover"
+  />
+);
+
+// Participant Component
+const ParticipantImage = ({ participants, currentIndex, isDrawing, showWinner }) =>
+  participants.map((employee, index) => (
+    <img
+      key={employee.id}
+      src={`${API_URLS.images}${employee.image}`}
+      alt={employee.name}
+      className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-200
+        ${index === currentIndex && (isDrawing || showWinner) ? 'opacity-100' : 'opacity-0'}`}
+    />
+  ));
+
+// Winner Display Component with Congratulations
+const WinnerDisplay = ({ showWinnerName, winner }) => {
+  const [showCongratulations, setShowCongratulations] = useState(false);
+
+  useEffect(() => {
+    if (showWinnerName) {
+      const timer = setTimeout(() => setShowCongratulations(true), 1000);
+      return () => clearTimeout(timer);
+    } else {
+      setShowCongratulations(false);
+    }
+  }, [showWinnerName]);
+
+  return (
+    <>
+      <div className={`absolute w-full bottom-16 left-1/2 transform -translate-x-1/2 
+        font-bold text-orange-100 drop-shadow-lg bg-black/70 p-4 z-10 text-2xl uppercase
+        transition-opacity duration-1000 ${showWinnerName ? 'opacity-100' : 'opacity-0'}
+        flex justify-center items-center gap-4 text-center outline-text`}>
+        <span className='w-auto flex items-center mb-2 ms-5 text-4xl'>🎉</span>
+        {/* <span className='w-auto flex items-center justify-center text-glow-yellow-500'>{`${winner?.name} Fernandez`}</span> */}
+        <span className='w-auto flex items-center justify-center text-glow-yellow-500'>{winner?.name}</span>
+        <span className='w-auto flex items-center mb-2 me-5 text-4xl'>🎉</span>
+      </div>
+      <Congratulations showCongratulations={showCongratulations} />
+    </>
+  );
+};
+
+const Congratulations = ({ showCongratulations }) => (
+  <div className={`absolute w-full bottom-4 left-1/2 transform -translate-x-1/2 
+    text-2xl font-bold text-yellow-400 z-10 text-glow-orange-500
+    transition-opacity duration-1000 ${showCongratulations ? 'opacity-100' : 'opacity-0'}
+    text-center outline-text`}>
+    Congratulations!
+  </div>
+);
+
 const App = () => {
   const [participants, setParticipants] = useState([]);
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -9,23 +75,14 @@ const App = () => {
   const [showWinnerName, setShowWinnerName] = useState(false);
   const [placeholderImage, setPlaceholderImage] = useState(null);
   const [winner, setWinner] = useState(null);
+  const [winners, setWinners] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  const PORT = import.meta.env.VITE_REACT_APP_API_PORT;
-  const APP_URL = import.meta.env.VITE_REACT_APP_URL || 'http://localhost';
-
-  const EMPLOYEE_API_URL = `${APP_URL}:${PORT}/api/participants`;
-  const EMPLOYEE_IMAGES_API_URL = `${APP_URL}:${PORT}/participants`;
-
-  const PLACEHOLDER_API_URL = `${APP_URL}:${PORT}/api/random-placeholder`;
-  const PLACEHOLDER_IMAGES_API_URL = `${APP_URL}:${PORT}/placeholders`;
-
-  // Add a new useEffect to fetch the random placeholder when component mounts
   useEffect(() => {
     const fetchRandomPlaceholder = async () => {
       try {
-        const response = await fetch(PLACEHOLDER_API_URL);
+        const response = await fetch(API_URLS.placeholder);
         if (!response.ok) throw new Error('Failed to fetch placeholder');
         const data = await response.json();
         setPlaceholderImage(data.image);
@@ -39,21 +96,17 @@ const App = () => {
 
   useEffect(() => {
     if (showWinner) {
-      const timer = setTimeout(() => {
-        setShowWinnerName(true);
-      }, 3000); // 3 second delay
-
-      return () => clearTimeout(timer); // Cleanup the timer on component unmount or when showWinner changes
+      const timer = setTimeout(() => setShowWinnerName(true), 2500);
+      return () => clearTimeout(timer);
     } else {
       setShowWinnerName(false);
     }
   }, [showWinner]);
 
-  // Fetch participants data from Express backend
   useEffect(() => {
     const fetchParticipants = async () => {
       try {
-        const response = await fetch(EMPLOYEE_API_URL);
+        const response = await fetch(API_URLS.participants);
         if (!response.ok) throw new Error('Failed to fetch participants');
         const data = await response.json();
         setParticipants(data);
@@ -67,52 +120,62 @@ const App = () => {
     fetchParticipants();
   }, []);
 
-  const getRandomEmployee = useCallback(() => {
-    return participants[Math.floor(Math.random() * participants.length)];
-  }, [participants]);
+  const getRandomUniqueParticipant = useCallback(() => {
+    const eligibleParticipants = participants.filter(
+      (participant) => !winners.includes(participant.id)
+    );
+
+    if (eligibleParticipants.length === 0) {
+      console.warn('No eligible participants left to draw!');
+      return null; // No more eligible participants
+    }
+
+    return eligibleParticipants[Math.floor(Math.random() * eligibleParticipants.length)];
+  }, [participants, winners]);
 
   const drawWinner = useCallback(() => {
     if (isDrawing || participants.length === 0) return;
 
     setIsDrawing(true);
     setShowWinner(false);
+
     let speed = 50;
     let duration = 0;
-    const maxDuration = 7000;
+    const maxDuration = 8000;
     const slowdownFactor = 1.1;
 
     const animate = () => {
-      setCurrentIndex(prev => (prev + 1) % participants.length);
+      setCurrentIndex((prev) => {
+        // Ensure the next index is not 0
+        const nextIndex = (prev + 1) % participants.length;
+        return nextIndex === 0 ? 1 : nextIndex;
+      });
+      
       duration += speed;
 
       if (duration < maxDuration) {
         speed = Math.min(speed * slowdownFactor, 500);
         setTimeout(animate, speed);
       } else {
-        const selectedWinner = getRandomEmployee();
-        setWinner(selectedWinner);
-        setCurrentIndex(participants.indexOf(selectedWinner));
-        setShowWinner(true);
+        const selectedWinner = getRandomUniqueParticipant();
+
+        if (selectedWinner) {
+          const winnerIndex = participants.indexOf(selectedWinner);
+          // If winner index is 0, use index 1 instead
+          setCurrentIndex(winnerIndex === 0 ? 1 : winnerIndex);
+          setWinner(selectedWinner);
+          setShowWinner(true);
+          setWinners((prevWinners) => [...prevWinners, selectedWinner.id]);
+        } else {
+          console.warn('No winner selected. All participants have already won.');
+        }
+
         setIsDrawing(false);
       }
     };
 
     animate();
-  }, [isDrawing, getRandomEmployee, participants]);
-
-  // useEffect(() => { // Remove this useEffect temporarily
-  //   const handleKeydown = (e) => {
-  //     if (e.code === 'Space' && !isDrawing) {
-  //       e.preventDefault();
-  //       drawWinner();
-  //     } else if (e.code === 'F11' || e.code === 'KeyF') {
-  //       e.preventDefault();
-  //     }
-  //   };
-
-  //   document.addEventListener('keydown', handleKeydown);
-  //   return () => document.removeEventListener('keydown', handleKeydown);
-  // }, [drawWinner, isDrawing]);
+  }, [isDrawing, getRandomUniqueParticipant, participants]);
 
   if (isLoading) {
     return (
@@ -163,15 +226,12 @@ const App = () => {
             launchSpeed={3} />
         </>
       )}
-      <div className="container mx-auto px-4 py-8 flex flex-col min-h-screen">
-        <h5 className="uppercase first-line:font-bold text-orange-500 text-center mb-3">
-          Sprobe Year-End 2024 - Raffle Draw
-        </h5>
-        <h1 className="text-4xl font-bold text-orange-700 text-center mb-3">
+      <div className="container mx-auto px-4 py-6 flex flex-col min-h-screen">
+        <h1 className="text-3xl text-glow-orange-200 font-bold text-orange-600 text-center mb-2">
           Who's the Lucky Winner?
         </h1>
 
-        <div className="relative flex-1 flex flex-col items-center justify-center">
+        <div className="relative flex-1 flex flex-col items-center justify-start mt-3">
           {participants.length === 0 ? (
             <div className="text-2xl text-yellow-400">
               No employee photos found. Please add photos to the "participants" directory.
@@ -181,50 +241,41 @@ const App = () => {
               className="relative w-[80vh] max-w-[90vw] aspect-square border-8 border-yellow-500 rounded-2xl overflow-hidden shadow-[0_0_30px_rgba(59,130,246,0.3)]"
             >
               {!isDrawing && currentIndex === 0 ? (
-                <img
-                  src={`${PLACEHOLDER_IMAGES_API_URL}/${placeholderImage}`}
-                  alt="Click Draw to Start"
-                  className="absolute inset-0 w-full h-full object-cover"
-                />
+                <Placeholder image={`${API_URLS.placeholderImage}/${placeholderImage}`} />
               ) : (
                 <>
-                  {participants.map((employee, index) => (
-                    <img
-                      key={employee.id}
-                      src={`${EMPLOYEE_IMAGES_API_URL}${employee.image}`}
-                      alt={employee.name}
-                      className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-200
-                        ${index === currentIndex && (isDrawing || showWinner) ? 'opacity-100' : 'opacity-0'}`}
-                    />
-                  ))}
-                  {showWinner && (
-                    <div className={`absolute w-full bottom-20 left-1/2 transform -translate-x-1/2 
-                                uppercase text-2xl font-bold text-orange-100 drop-shadow-lg bg-black/60 p-4 z-10
-                                transition-opacity duration-1000 ${showWinnerName ? 'opacity-100' : 'opacity-0'} text-center outline-text`}>
-                      <span className="w-100 align-text-bottom">🎉</span> {winner?.name} <span className="w-100 align-text-bottom">🎉</span>
-                    </div>
-                  )}
+                  <ParticipantImage
+                    participants={participants}
+                    currentIndex={currentIndex}
+                    isDrawing={isDrawing}
+                    showWinner={showWinner}
+                  />
+                  {showWinner && <WinnerDisplay showWinnerName={showWinnerName} winner={winner} />}
                 </>
               )}
             </div>
           )}
         </div>
 
-        <div className="fixed bottom-8 left-0 right-0 flex justify-center">
+        <div className="fixed bottom-4 left-0 right-0 flex justify-center">
           <button
             onClick={drawWinner}
             disabled={isDrawing || participants.length === 0}
-            className={`px-10 py-5 text-1xl font-bold tracking-wider uppercase rounded-xl
-                      transform transition-all duration-300 shadow-lg text-orange-900
+            className={`px-8 py-4 text-md font-bold tracking-wider uppercase rounded-xl
+                      transform transition-all duration-300 shadow-lg
                       ${isDrawing || participants.length === 0
-                ? 'bg-gray-500 cursor-not-allowed text-gray-400'
-                : 'bg-yellow-500 hover:bg-orange-600 hover:text-orange-100 hover:-translate-y-1 hover:shadow-xl'
+                ? 'bg-gray-500 text-gray-400 cursor-not-allowed'
+                : 'bg-yellow-500 text-orange-900 hover:bg-orange-600 hover:text-orange-100 hover:-translate-y-1 hover:shadow-xl'
               }`}
+            aria-label="Start the raffle draw"
           >
             Draw!
           </button>
         </div>
       </div>
+      <code className="fixed bottom-2 left-2 text-xs text-white py-2 px-2">
+        © {new Date().getFullYear()} Sprobe Year-End 2024 - Raffle Winner Picker
+      </code>
     </div>
   );
 };
