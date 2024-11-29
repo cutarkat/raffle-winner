@@ -49,7 +49,6 @@ const WinnerDisplay = ({ showWinnerName, winner }) => {
         transition-opacity duration-1000 ${showWinnerName ? 'opacity-100' : 'opacity-0'}
         flex justify-center items-center gap-4 text-center outline-text`}>
         <span className='w-auto flex items-center mb-2 ms-5 text-4xl'>🎉</span>
-        {/* <span className='w-auto flex items-center justify-center text-glow-yellow-500'>{`${winner?.name} Fernandez`}</span> */}
         <span className='w-auto flex items-center justify-center text-glow-yellow-500'>{winner?.name}</span>
         <span className='w-auto flex items-center mb-2 me-5 text-4xl'>🎉</span>
       </div>
