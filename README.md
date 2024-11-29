@@ -84,6 +84,9 @@ Designed for celebrations like parties, events, or gatherings, this application 
 3. Click the "Draw!" button to randomly select a winner.
 4. Enjoy the confetti celebration on the screen!
 
+![alt text](image01.png)
+![alt text](image02.png)
+
 ## Customization
 
 - **Styling**: Modify TailwindCSS classes in the `frontend/src` components for a customized look.

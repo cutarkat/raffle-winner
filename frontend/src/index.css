@@ -7,7 +7,7 @@
   font-family: "Press Start 2P";
   font-style: normal;
   font-weight: normal;
-  src:local("PressStart2P-Regular"), url('./assets/fonts/PressStart2P-Regular.ttf');
+  src:local("PressStart2P-Regular"), url('./fonts/PressStart2P-Regular.ttf');
 }
 
 body {
